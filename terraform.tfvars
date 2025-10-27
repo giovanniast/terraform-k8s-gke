@@ -1,5 +1,5 @@
 # Valores das variáveis
-project_id   = "prodam-d6584-finops-labs"
+project_id   = "meu-project"
 region       = "us-central1"
 cluster_name = "cluster-curso-finops"
 
