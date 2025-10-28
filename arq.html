@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitetura GKE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4285f4;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .layer {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .layer:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .layer-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .layer-title .icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        .gcp-layer {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+        }
+        
+        .gcp-layer .layer-title {
+            color: white;
+        }
+        
+        .control-plane {
+            background: linear-gradient(135deg, #fbbc04 0%, #ea4335 100%);
+            color: white;
+            border: none;
+        }
+        
+        .control-plane .layer-title {
+            color: white;
+        }
+        
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .component {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .component:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .component-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .component-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        
+        .nodes-section {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .node-pool {
+            flex: 1;
+            min-width: 280px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px dashed #4285f4;
+        }
+        
+        .node-pool-title {
+            font-weight: bold;
+            color: #4285f4;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .node {
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #4285f4;
+        }
+        
+        .pod {
+            background: #d2e3fc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 0.85em;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #4285f4;
+            margin: 10px 0;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .legend-box {
+            width: 25px;
+            height: 25px;
+            border-radius: 6px;
+        }
+        
+        .info-box {
+            background: #e8f0fe;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .info-box h3 {
+            color: #4285f4;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #333;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Arquitetura do GKE no GCP</h1>
+        <p class="subtitle">Google Kubernetes Engine - Estrutura e Componentes</p>
+        
+        <div class="architecture">
+            <!-- GCP Layer -->
+            <div class="layer gcp-layer">
+                <div class="layer-title">
+                    <span class="icon">☁️</span>
+                    Google Cloud Platform (GCP)
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">🌐 VPC Network</div>
+                        <div class="component-desc">Rede privada virtual para isolamento e comunicação segura entre recursos</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">⚖️ Cloud Load Balancing</div>
+                        <div class="component-desc">Balanceamento de carga global para distribuir tráfego</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">💾 Persistent Disks</div>
+                        <div class="component-desc">Armazenamento persistente para volumes dos containers</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">🔐 Cloud IAM</div>
+                        <div class="component-desc">Gerenciamento de identidade e acesso para segurança</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <!-- Control Plane -->
+            <div class="layer control-plane">
+                <div class="layer-title">
+                    <span class="icon">🎛️</span>
+                    Control Plane (Gerenciado pelo Google)
+                </div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-name">🧠 API Server</div>
+                        <div class="component-desc">Ponto de entrada para todas as operações do cluster via kubectl ou APIs</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">📊 etcd</div>
+                        <div class="component-desc">Banco de dados distribuído que armazena todo o estado do cluster</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">📅 Scheduler</div>
+                        <div class="component-desc">Decide em qual nó cada Pod será executado com base em recursos disponíveis</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-name">🔄 Controller Manager</div>
+                        <div class="component-desc">Garante que o estado desejado do cluster seja mantido</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <!-- Data Plane -->
+            <div class="layer">
+                <div class="layer-title">
+                    <span class="icon" style="background: #34a853; color: white;">⚙️</span>
+                    Data Plane (Nodes) - Gerenciados por Você
+                </div>
+                
+                <div class="nodes-section">
+                    <div class="node-pool">
+                        <div class="node-pool-title">📦 Node Pool 1 (default)</div>
+                        <div class="node">
+                            <strong>🖥️ Worker Node 1</strong><br>
+                            <small>Machine Type: n1-standard-2</small>
+                            <div>
+                                <span class="pod">🐳 Pod A</span>
+                                <span class="pod">🐳 Pod B</span>
+                            </div>
+                        </div>
+                        <div class="node">
+                            <strong>🖥️ Worker Node 2</strong><br>
+                            <small>Machine Type: n1-standard-2</small>
+                            <div>
+                                <span class="pod">🐳 Pod C</span>
+                                <span class="pod">🐳 Pod D</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="node-pool">
+                        <div class="node-pool-title">📦 Node Pool 2 (high-memory)</div>
+                        <div class="node">
+                            <strong>🖥️ Worker Node 3</strong><br>
+                            <small>Machine Type: n1-highmem-4</small>
+                            <div>
+                                <span class="pod">🐳 Pod E</span>
+                                <span class="pod">🐳 Pod F</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-box" style="margin-top: 20px;">
+                    <h3>Componentes em Cada Node:</h3>
+                    <ul>
+                        <li><strong>Kubelet:</strong> Agente que garante que os containers estão rodando</li>
+                        <li><strong>Kube-proxy:</strong> Gerencia regras de rede para comunicação</li>
+                        <li><strong>Container Runtime:</strong> Executa os containers (containerd)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>🎯 Fluxo de Funcionamento:</h3>
+            <ul>
+                <li><strong>Deploy:</strong> Você envia um comando kubectl apply → API Server recebe</li>
+                <li><strong>Armazenamento:</strong> Estado é salvo no etcd</li>
+                <li><strong>Scheduling:</strong> Scheduler decide onde rodar o Pod</li>
+                <li><strong>Execução:</strong> Kubelet no Node cria e monitora os containers</li>
+                <li><strong>Rede:</strong> Kube-proxy configura as regras de comunicação</li>
+                <li><strong>Acesso:</strong> Load Balancer roteia tráfego externo para os Pods</li>
+            </ul>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);"></div>
+                <span>Infraestrutura GCP</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: linear-gradient(135deg, #fbbc04 0%, #ea4335 100%);"></div>
+                <span>Control Plane (Google)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #e8f0fe; border: 2px solid #4285f4;"></div>
+                <span>Worker Nodes (Você)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #d2e3fc;"></div>
+                <span>Pods/Containers</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
