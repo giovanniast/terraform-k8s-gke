@@ -1,3 +1,7 @@
+1- Algumas Queries para visualizções dos custos. Analisem os retornos de cada uma.
+
+
+
 -- 1. TOP 10 PROJETOS COM MAIOR CUSTO (MÊS ATUAL)
 SELECT 
   project.id AS projeto,
@@ -239,4 +243,11 @@ WHERE
   DATE(usage_start_time) >= DATE_TRUNC(CURRENT_DATE(), MONTH)
   AND cost > 0;
 
-Dashboard (20–25 min): montar 6–8 visuais: custo diário (30d), top serviços/SKUs, custo por região, % sem cost_center, env, custo por app/env. Filtros: projeto, serviço, período.
+========================
+
+2- Dashboard: montar visuais:
+custo diário (30d)
+top serviços/SKUs
+custo por região
+% sem cost_center, env
+custo por app/env
